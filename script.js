@@ -122,12 +122,20 @@ function extractAllWeeks(rows) {
   return weeks;
 }
 
+// Week date ranges
+const WEEK_DATES = [
+  'Jan 5-9',
+  'Jan 12-16',
+  'Jan 19-23',
+  'Jan 26-30'
+];
+
 // Render week tabs
 function renderWeekTabs() {
   const container = document.getElementById('weekTabs');
   container.innerHTML = allWeeks.map((_, i) => `
     <button class="week-tab ${i === currentWeek ? 'active' : ''}" onclick="selectWeek(${i})">
-      Week ${i + 1}
+      Week ${i + 1} <span class="week-date">${WEEK_DATES[i] || ''}</span>
     </button>
   `).join('');
 }
@@ -200,7 +208,7 @@ function renderCurrentWeek() {
   }, 100);
   
   // Week label
-  document.getElementById('weekLabel').textContent = `Week ${currentWeek + 1}`;
+  document.getElementById('weekLabel').textContent = `Week ${currentWeek + 1} (${WEEK_DATES[currentWeek] || ''})`;
   
   // Leaderboard
   updateLeaderboard(week.reps);
