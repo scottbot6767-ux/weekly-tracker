@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Weekly Tracker | Live Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="noise"></div>
+  
+  <div class="dashboard">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="live-badge">
+          <span class="live-dot"></span>
+          LIVE
+        </div>
+        <h1>WEEKLY SALES TRACKER</h1>
+      </div>
+      <div class="header-right">
+        <span class="update-time" id="lastUpdated">--</span>
+        <button class="refresh-btn" onclick="refreshData()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Week Selector -->
+    <section class="week-selector">
+      <div class="week-tabs" id="weekTabs"></div>
+      <div class="month-summary">
+        <span class="month-label">MONTH TOTAL</span>
+        <span class="month-value" id="monthSets">-- Sets</span>
+        <span class="month-divider">•</span>
+        <span class="month-value" id="monthShows">-- Shows</span>
+        <span class="month-divider">•</span>
+        <span class="month-value month-money" id="monthClosed">$0</span>
+      </div>
+    </section>
+
+    <!-- Weekly Stats -->
+    <section class="hero-stats">
+      <div class="stat-card stat-sets">
+        <div class="stat-glow"></div>
+        <div class="stat-content">
+          <span class="stat-label">WEEKLY SETS</span>
+          <div class="stat-value-wrap">
+            <span class="stat-value" id="weeklySets">--</span>
+            <span class="stat-trend" id="setsTrend"></span>
+          </div>
+          <div class="stat-bar">
+            <div class="stat-bar-fill" id="setsBar"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stat-card stat-shows">
+        <div class="stat-glow"></div>
+        <div class="stat-content">
+          <span class="stat-label">WEEKLY SHOWS</span>
+          <div class="stat-value-wrap">
+            <span class="stat-value" id="weeklyShows">--</span>
+            <span class="stat-trend" id="showsTrend"></span>
+          </div>
+          <div class="stat-bar">
+            <div class="stat-bar-fill" id="showsBar"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stat-card stat-rate">
+        <div class="stat-glow"></div>
+        <div class="stat-content">
+          <span class="stat-label">SHOW RATE</span>
+          <div class="stat-value-wrap">
+            <span class="stat-value" id="weeklyRate">--%</span>
+          </div>
+          <div class="stat-bar">
+            <div class="stat-bar-fill" id="rateBar"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stat-card stat-closed">
+        <div class="stat-glow"></div>
+        <div class="stat-content">
+          <span class="stat-label">CLOSED WON</span>
+          <div class="stat-value-wrap">
+            <span class="stat-value" id="weeklyClosed">$0</span>
+          </div>
+          <div class="stat-bar">
+            <div class="stat-bar-fill" id="closedBar"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trend Chart -->
+    <section class="trend-section">
+      <div class="chart-card full-width">
+        <h3>WEEKLY PERFORMANCE TREND</h3>
+        <div class="chart-wrap tall">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Weekly Leaderboard -->
+    <section class="leaderboard-section">
+      <div class="section-header">
+        <h2>WEEKLY LEADERBOARD</h2>
+        <span class="section-subtitle" id="weekLabel">Week --</span>
+      </div>
+      
+      <div class="leaderboard-header">
+        <span class="lb-col lb-rank">RANK</span>
+        <span class="lb-col lb-name">REP</span>
+        <span class="lb-col lb-sets">SETS</span>
+        <span class="lb-col lb-shows">SHOWS</span>
+        <span class="lb-col lb-rate">SHOW %</span>
+        <span class="lb-col lb-monthly">MTD SETS</span>
+      </div>
+      
+      <div class="leaderboard" id="leaderboard"></div>
+    </section>
+
+    <!-- Rep Performance Over Weeks -->
+    <section class="charts-section">
+      <div class="chart-card">
+        <h3>SETS BY REP (THIS WEEK)</h3>
+        <div class="chart-wrap">
+          <canvas id="repSetsChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>CUMULATIVE MONTHLY SETS</h3>
+        <div class="chart-wrap">
+          <canvas id="cumulativeChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>Data syncs from Google Sheets every 5 minutes</span>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
