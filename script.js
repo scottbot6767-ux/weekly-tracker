@@ -1,6 +1,11 @@
 // Google Sheet Config
 const SHEET_ID = '1mv6WnV4tRefxF6el3-p8hsS0lFsnS1Ah5QeEQqk9UgY';
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
+const SHEETS = {
+  january: { gid: 0, dates: ['Jan 5-9', 'Jan 12-16', 'Jan 19-23', 'Jan 26-30'] },
+  february: { gid: 1406068066, dates: ['Feb 2-6', 'Feb 9-13', 'Feb 16-20', 'Feb 23-27'] }
+};
+
+let currentMonth = 'february'; // Default to most recent
 
 // Chart instances
 let trendChart, repSetsChart, cumulativeChart;
@@ -122,22 +127,37 @@ function extractAllWeeks(rows) {
   return weeks;
 }
 
-// Week date ranges
-const WEEK_DATES = [
-  'Jan 5-9',
-  'Jan 12-16',
-  'Jan 19-23',
-  'Jan 26-30'
-];
+// Get current week dates
+function getWeekDates() {
+  return SHEETS[currentMonth]?.dates || [];
+}
+
+// Render month tabs
+function renderMonthTabs() {
+  const container = document.getElementById('monthTabs');
+  if (!container) return;
+  container.innerHTML = `
+    <button class="month-tab ${currentMonth === 'january' ? 'active' : ''}" onclick="selectMonth('january')">January</button>
+    <button class="month-tab ${currentMonth === 'february' ? 'active' : ''}" onclick="selectMonth('february')">February</button>
+  `;
+}
 
 // Render week tabs
 function renderWeekTabs() {
   const container = document.getElementById('weekTabs');
+  const dates = getWeekDates();
   container.innerHTML = allWeeks.map((_, i) => `
     <button class="week-tab ${i === currentWeek ? 'active' : ''}" onclick="selectWeek(${i})">
-      Week ${i + 1} <span class="week-date">${WEEK_DATES[i] || ''}</span>
+      Week ${i + 1} <span class="week-date">${dates[i] || ''}</span>
     </button>
   `).join('');
+}
+
+// Select month
+function selectMonth(month) {
+  currentMonth = month;
+  renderMonthTabs();
+  fetchData();
 }
 
 // Select week
@@ -208,7 +228,8 @@ function renderCurrentWeek() {
   }, 100);
   
   // Week label
-  document.getElementById('weekLabel').textContent = `Week ${currentWeek + 1} (${WEEK_DATES[currentWeek] || ''})`;
+  const dates = getWeekDates();
+  document.getElementById('weekLabel').textContent = `Week ${currentWeek + 1} (${dates[currentWeek] || ''})`;
   
   // Leaderboard
   updateLeaderboard(week.reps);
@@ -382,13 +403,17 @@ function updateCumulativeChart() {
 // Fetch and render
 async function fetchData() {
   try {
-    const response = await fetch(SHEET_URL);
+    const sheetConfig = SHEETS[currentMonth];
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${sheetConfig.gid}`;
+    
+    const response = await fetch(url);
     const csv = await response.text();
     const rows = parseCSV(csv);
     
     allWeeks = extractAllWeeks(rows);
     currentWeek = allWeeks.length - 1; // Start with latest week
     
+    renderMonthTabs();
     renderWeekTabs();
     renderCurrentWeek();
     updateTrendChart();
