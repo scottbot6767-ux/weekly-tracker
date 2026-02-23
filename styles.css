@@ -166,6 +166,23 @@ body {
   color: white;
 }
 
+/* MTD tab gets a distinct green accent */
+.week-tab.mtd-tab {
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.week-tab.mtd-tab:hover {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.week-tab.mtd-tab.active {
+  background: linear-gradient(135deg, #059669, #10b981);
+  border-color: transparent;
+  color: white;
+}
+
 .month-summary {
   display: flex;
   align-items: center;
