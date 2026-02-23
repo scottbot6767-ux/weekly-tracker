@@ -279,6 +279,7 @@ function renderCurrentWeek() {
   // Charts
   updateRepChart(week.reps);
   updateCumulativeChart();
+  updateTrendChart();
 }
 
 // Update leaderboard
