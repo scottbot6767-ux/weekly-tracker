@@ -166,15 +166,20 @@ function renderMonthTabs() {
   `;
 }
 
-// Render week tabs
+// Render week tabs — including an MTD tab at the end (index = allWeeks.length)
 function renderWeekTabs() {
   const container = document.getElementById('weekTabs');
   const dates = getWeekDates();
-  container.innerHTML = allWeeks.map((_, i) => `
+  const weekBtns = allWeeks.map((_, i) => `
     <button class="week-tab ${i === currentWeek ? 'active' : ''}" onclick="selectWeek(${i})">
       Week ${i + 1} <span class="week-date">${dates[i] || ''}</span>
     </button>
   `).join('');
+  const mtdActive = currentWeek === allWeeks.length;
+  const mtdBtn = `<button class="week-tab mtd-tab ${mtdActive ? 'active' : ''}" onclick="selectWeek(${allWeeks.length})">
+    MTD <span class="week-date">Full Month</span>
+  </button>`;
+  container.innerHTML = weekBtns + mtdBtn;
 }
 
 // Select month
@@ -184,17 +189,29 @@ function selectMonth(month) {
   fetchData();
 }
 
-// Select week
+// Select week — or MTD view when index === allWeeks.length
 function selectWeek(index) {
   currentWeek = index;
   renderWeekTabs();
-  renderCurrentWeek();
+  if (index === allWeeks.length) {
+    renderMonthlyView();
+  } else {
+    renderCurrentWeek();
+  }
 }
 
 // Render current week data
 function renderCurrentWeek() {
   const week = allWeeks[currentWeek];
   if (!week) return;
+
+  // Restore weekly labels (in case we're coming back from MTD view)
+  document.getElementById('lbHeaderSets').textContent    = 'SETS';
+  document.getElementById('lbHeaderShows').textContent   = 'SHOWS';
+  document.getElementById('lbHeaderMonthly').textContent = 'MTD SETS';
+  document.getElementById('statLabelSets').textContent   = 'WEEKLY SETS';
+  document.getElementById('statLabelShows').textContent  = 'WEEKLY SHOWS';
+  document.getElementById('trendChartTitle').textContent = 'WEEKLY PERFORMANCE TREND';
   
   const prevWeek = currentWeek > 0 ? allWeeks[currentWeek - 1] : null;
   
@@ -287,6 +304,158 @@ function updateLeaderboard(reps) {
       </div>
     `;
   }).join('');
+}
+
+// =============================================
+// MTD VIEW
+// =============================================
+
+function renderMonthlyView() {
+  const latest = allWeeks[allWeeks.length - 1];
+  if (!latest) return;
+
+  // Pull MTD totals from the latest week's monthly columns
+  const monthlySets   = latest.totals?.monthlySets   || latest.reps.reduce((s, r) => s + r.monthlySets,  0);
+  const monthlyShows  = latest.totals?.monthlyShows  || latest.reps.reduce((s, r) => s + r.monthlyShows, 0);
+  const closedWon     = latest.reps.reduce((s, r) => s + r.closedWon, 0);
+  const showRate      = latest.totals?.showRate ?? (monthlySets > 0 ? Math.round((monthlyShows / monthlySets) * 100) : 0);
+
+  // Relabel stat cards
+  document.getElementById('statLabelSets').textContent  = 'MTD SETS';
+  document.getElementById('statLabelShows').textContent = 'MTD SHOWS';
+
+  // Hero stats
+  animateValue(document.getElementById('weeklySets'),   0, monthlySets);
+  animateValue(document.getElementById('weeklyShows'),  0, monthlyShows);
+  document.getElementById('weeklyRate').textContent    = showRate + '%';
+  document.getElementById('weeklyClosed').textContent  = closedWon > 0 ? formatCurrency(closedWon) : '$0';
+  document.getElementById('setsTrend').textContent  = '';
+  document.getElementById('showsTrend').textContent = '';
+
+  // Progress bars scaled to full-month targets
+  setTimeout(() => {
+    document.getElementById('setsBar').style.width    = Math.min(100, (monthlySets  / 150) * 100) + '%';
+    document.getElementById('showsBar').style.width   = Math.min(100, (monthlyShows /  80) * 100) + '%';
+    document.getElementById('rateBar').style.width    = Math.min(100, showRate)                   + '%';
+    document.getElementById('closedBar').style.width  = Math.min(100, (closedWon / 500000) * 100) + '%';
+  }, 100);
+
+  // Month summary bar
+  document.getElementById('monthSets').textContent   = monthlySets  + ' Sets';
+  document.getElementById('monthShows').textContent  = monthlyShows + ' Shows';
+  document.getElementById('monthClosed').textContent = closedWon > 0 ? formatCurrency(closedWon) : '$0';
+
+  // Week label
+  document.getElementById('weekLabel').textContent = 'Month to Date';
+
+  // Leaderboard — relabel headers + sort by monthly sets
+  document.getElementById('lbHeaderSets').textContent    = 'MTD SETS';
+  document.getElementById('lbHeaderShows').textContent   = 'MTD SHOWS';
+  document.getElementById('lbHeaderMonthly').textContent = 'CLOSED';
+
+  const reps = [...latest.reps].sort((a, b) => b.monthlySets - a.monthlySets);
+  updateMonthlyLeaderboard(reps);
+
+  // Swap trend chart to cumulative MTD view
+  document.getElementById('trendChartTitle').textContent = 'CUMULATIVE MTD TREND';
+  updateMTDTrendChart();
+  updateRepChart(reps); // rep chart still shows this week's sets
+}
+
+// Monthly leaderboard — shows MTD sets, MTD shows, show rate, closed won
+function updateMonthlyLeaderboard(reps) {
+  const leaderboard = document.getElementById('leaderboard');
+  leaderboard.innerHTML = reps.map((rep, i) => {
+    const rateClass = rep.showRate >= 70 ? 'good' : rep.showRate >= 45 ? 'warning' : 'low';
+    return `
+      <div class="lb-item ${i === 1 ? 'rank-2' : ''} ${i === 2 ? 'rank-3' : ''}">
+        <div class="lb-rank"><div class="lb-rank-num">${i + 1}</div></div>
+        <div class="lb-name">${rep.name}</div>
+        <div class="lb-sets">${rep.monthlySets}</div>
+        <div class="lb-shows">${rep.monthlyShows}</div>
+        <div class="lb-rate">
+          <span class="rate-indicator ${rateClass}"></span>
+          ${rep.showRate}%
+        </div>
+        <div class="lb-monthly">${rep.closedWon > 0 ? formatCurrency(rep.closedWon) : '—'}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Cumulative MTD trend chart — shows running totals week by week
+function updateMTDTrendChart() {
+  const labels   = allWeeks.map((_, i) => `Week ${i + 1}`);
+  const setsData = allWeeks.map(w => w.totals?.monthlySets   || w.reps.reduce((s, r) => s + r.monthlySets,  0));
+  const showsData= allWeeks.map(w => w.totals?.monthlyShows  || w.reps.reduce((s, r) => s + r.monthlyShows, 0));
+  const closedData=allWeeks.map(w => w.reps.reduce((s, r) => s + r.closedWon, 0));
+
+  if (trendChart) trendChart.destroy();
+
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'MTD Sets',
+          data: setsData,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.1)',
+          fill: true, tension: 0.3, pointRadius: 6,
+          pointBackgroundColor: '#3b82f6'
+        },
+        {
+          label: 'MTD Shows',
+          data: showsData,
+          borderColor: '#8b5cf6',
+          backgroundColor: 'rgba(139,92,246,0.1)',
+          fill: true, tension: 0.3, pointRadius: 6,
+          pointBackgroundColor: '#8b5cf6'
+        },
+        {
+          label: 'Closed Won ($K)',
+          data: closedData.map(v => Math.round(v / 1000)),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,0.05)',
+          fill: false, tension: 0.3, pointRadius: 6,
+          pointBackgroundColor: '#10b981',
+          yAxisID: 'y2'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { color: '#a1a1aa', font: { family: 'Inter', size: 11 }, boxWidth: 12, padding: 16 }
+        },
+        tooltip: {
+          backgroundColor: '#1a1a24', titleColor: '#fff', bodyColor: '#a1a1aa',
+          borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, cornerRadius: 8, padding: 12,
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.label === 'Closed Won ($K)') return ` Closed: $${ctx.raw}K`;
+              return ` ${ctx.dataset.label}: ${ctx.raw}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#52525b', font: { family: 'Inter', size: 11 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#52525b' }, beginAtZero: true },
+        y2: {
+          position: 'right',
+          grid: { display: false },
+          ticks: { color: '#10b981', callback: v => '$' + v + 'K' },
+          beginAtZero: true
+        }
+      }
+    }
+  });
 }
 
 // Update trend chart (all weeks)
