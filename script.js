@@ -66,6 +66,15 @@ function formatCurrency(num) {
   return '$' + num.toLocaleString();
 }
 
+// Parse show rate from whatever format the sheet uses:
+// "74.19%", "100%", "2/4 = 50%", "5/8 =62.5%", "3/5 60%"
+function parseShowRate(str) {
+  if (!str) return null;
+  const match = str.match(/(\d+(?:\.\d+)?)\s*%/);
+  if (match) return Math.round(parseFloat(match[1]));
+  return null;
+}
+
 // Extract all weeks data
 function extractAllWeeks(rows) {
   const weeks = [];
@@ -74,12 +83,15 @@ function extractAllWeeks(rows) {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     
-    // New section header
+    // New section header — detect Show Rate column position (it shifts between weeks)
     if (row[0] === 'Rep' && row[1] === 'Weekly Sets') {
       if (currentSection && currentSection.reps.length > 0) {
         weeks.push(currentSection);
       }
-      currentSection = { reps: [], totals: null };
+      const showRateColIdx = row.findIndex(cell =>
+        cell && cell.trim().toLowerCase() === 'show rate'
+      );
+      currentSection = { reps: [], totals: null, showRateColIdx };
       continue;
     }
     
@@ -89,12 +101,19 @@ function extractAllWeeks(rows) {
     if (!name || name === '' || name === ',') continue;
     
     if (name === 'Totals') {
+      // Read show rate from sheet column if available, else fall back to monthly shows/sets
+      const srIdx = currentSection.showRateColIdx;
+      const sheetRate = srIdx !== -1 ? parseShowRate(row[srIdx]) : null;
+      const monthlySetsT = parseInt(row[3]) || 0;
+      const monthlyShowsT = parseInt(row[4]) || 0;
+      const fallbackRate = monthlySetsT > 0 ? Math.round((monthlyShowsT / monthlySetsT) * 100) : 0;
       currentSection.totals = {
         weeklySets: parseInt(row[1]) || 0,
         weeklyShows: parseInt(row[2]) || 0,
-        monthlySets: parseInt(row[3]) || 0,
-        monthlyShows: parseInt(row[4]) || 0,
-        closedWon: parseCurrency(row[5])
+        monthlySets: monthlySetsT,
+        monthlyShows: monthlyShowsT,
+        closedWon: parseCurrency(row[5]),
+        showRate: sheetRate !== null ? sheetRate : fallbackRate
       };
       continue;
     }
@@ -105,6 +124,11 @@ function extractAllWeeks(rows) {
     const weeklyShows = parseInt(row[2]) || 0;
     const monthlySets = parseInt(row[3]) || 0;
     const monthlyShows = parseInt(row[4]) || 0;
+
+    // Per-rep show rate: read from sheet column if available
+    const srIdx = currentSection.showRateColIdx;
+    const repSheetRate = srIdx !== -1 ? parseShowRate(row[srIdx]) : null;
+    const repFallbackRate = weeklySets > 0 ? Math.round((weeklyShows / weeklySets) * 100) : 0;
     
     if (weeklySets > 0 || weeklyShows > 0 || monthlySets > 0) {
       currentSection.reps.push({
@@ -114,7 +138,7 @@ function extractAllWeeks(rows) {
         monthlySets,
         monthlyShows,
         closedWon: parseCurrency(row[5]),
-        showRate: weeklySets > 0 ? Math.round((weeklyShows / weeklySets) * 100) : 0
+        showRate: repSheetRate !== null ? repSheetRate : repFallbackRate
       });
     }
   }
@@ -184,7 +208,8 @@ function renderCurrentWeek() {
   const monthlyShows = week.totals?.monthlyShows || week.reps.reduce((s, r) => s + r.monthlyShows, 0);
   const closedWon = week.totals?.closedWon || week.reps.reduce((s, r) => s + r.closedWon, 0);
   
-  const showRate = weeklySets > 0 ? Math.round((weeklyShows / weeklySets) * 100) : 0;
+  // Use show rate from sheet (Actual Held / Total Possible Meetings) if available
+  const showRate = week.totals?.showRate ?? (weeklySets > 0 ? Math.round((weeklyShows / weeklySets) * 100) : 0);
   
   // Previous week for trends
   const prevSets = prevWeek?.totals?.weeklySets || (prevWeek?.reps.reduce((s, r) => s + r.weeklySets, 0) || 0);
