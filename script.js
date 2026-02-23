@@ -118,7 +118,7 @@ function extractAllWeeks(rows) {
       continue;
     }
     
-    if (name.includes('Deactivated') || row[1] === 'X' || row[1] === '') continue;
+    if (name.includes('Deactivated') || row[1] === 'X') continue;
     
     const weeklySets = parseInt(row[1]) || 0;
     const weeklyShows = parseInt(row[2]) || 0;
