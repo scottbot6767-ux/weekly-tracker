@@ -51,7 +51,7 @@
       <div class="stat-card stat-sets">
         <div class="stat-glow"></div>
         <div class="stat-content">
-          <span class="stat-label">WEEKLY SETS</span>
+          <span class="stat-label" id="statLabelSets">WEEKLY SETS</span>
           <div class="stat-value-wrap">
             <span class="stat-value" id="weeklySets">--</span>
             <span class="stat-trend" id="setsTrend"></span>
@@ -65,7 +65,7 @@
       <div class="stat-card stat-shows">
         <div class="stat-glow"></div>
         <div class="stat-content">
-          <span class="stat-label">WEEKLY SHOWS</span>
+          <span class="stat-label" id="statLabelShows">WEEKLY SHOWS</span>
           <div class="stat-value-wrap">
             <span class="stat-value" id="weeklyShows">--</span>
             <span class="stat-trend" id="showsTrend"></span>
@@ -106,7 +106,7 @@
     <!-- Trend Chart -->
     <section class="trend-section">
       <div class="chart-card full-width">
-        <h3>WEEKLY PERFORMANCE TREND</h3>
+        <h3 id="trendChartTitle">WEEKLY PERFORMANCE TREND</h3>
         <div class="chart-wrap tall">
           <canvas id="trendChart"></canvas>
         </div>
@@ -123,10 +123,10 @@
       <div class="leaderboard-header">
         <span class="lb-col lb-rank">RANK</span>
         <span class="lb-col lb-name">REP</span>
-        <span class="lb-col lb-sets">SETS</span>
-        <span class="lb-col lb-shows">SHOWS</span>
+        <span class="lb-col lb-sets"   id="lbHeaderSets">SETS</span>
+        <span class="lb-col lb-shows"  id="lbHeaderShows">SHOWS</span>
         <span class="lb-col lb-rate">SHOW %</span>
-        <span class="lb-col lb-monthly">MTD SETS</span>
+        <span class="lb-col lb-monthly" id="lbHeaderMonthly">MTD SETS</span>
       </div>
       
       <div class="leaderboard" id="leaderboard"></div>
